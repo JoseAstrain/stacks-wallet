@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useHistory } from 'react-router';
 import { Input } from '@blockstack/ui';
 
-import { setPassword as setPasswordAction } from '../../../store/keys';
+import { setSoftwareWalletPassword as setPasswordAction } from '../../../store/keys';
 import {
   Onboarding,
   OnboardingTitle,
