@@ -23,7 +23,6 @@ interface EncryptMnemonicArgs {
   mnemonic: string;
   derivedKeyHash: Uint8Array;
 }
-
 export async function encryptMnemonic({ mnemonic, derivedKeyHash }: EncryptMnemonicArgs) {
   const key = await deriveWebCryptoKey(derivedKeyHash);
   const iv = extractEncryptionInitVector(derivedKeyHash);
@@ -39,11 +38,10 @@ interface DecryptMnemonicArgs {
   encryptedMnemonic: string;
   derivedKeyHash: Uint8Array;
 }
-
 export async function decryptMnemonic({ encryptedMnemonic, derivedKeyHash }: DecryptMnemonicArgs) {
   const key = await deriveWebCryptoKey(derivedKeyHash);
   const iv = extractEncryptionInitVector(derivedKeyHash);
-  const algorithm = { name: 'AES-CBC', iv };
+  const algorithm = { name: algorithmName, iv };
   const encryptedBuffer = new Buffer(encryptedMnemonic, 'hex');
   const decrypted = await crypto.subtle.decrypt(algorithm, key, encryptedBuffer);
   const textDecoder = new TextDecoder();
