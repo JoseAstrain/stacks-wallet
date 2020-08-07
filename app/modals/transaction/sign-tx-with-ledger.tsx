@@ -1,37 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useHistory } from 'react-router-dom';
-import BlockstackApp from '@zondax/ledger-blockstack';
-import type Transport from '@ledgerhq/hw-transport';
+import React, { FC, useState, useRef, useCallback, useEffect } from 'react';
+import { LedgerConnectInstructions } from '../../components/ledger/ledger-connect-instructions';
 import TransportNodeHid from '@ledgerhq/hw-transport-node-hid';
-import { useDispatch } from 'react-redux';
-
-import routes from '../../../constants/routes.json';
-import {
-  Onboarding,
-  OnboardingTitle,
-  OnboardingText,
-  OnboardingButton,
-  OnboardingBackButton,
-} from '../../../components/onboarding';
-import { setLedgerWallet } from '../../../store/keys';
-import { useInterval } from '../../../hooks/use-interval';
-import { ERROR_CODE } from '../../../../../ledger-blockstack/js/src/common';
-import { delay } from '../../../utils/delay';
-import { LedgerConnectInstructions } from '../../../components/ledger/ledger-connect-instructions';
+import { LedgerConnectStep } from '../../pages/onboarding';
+import type Transport from '@ledgerhq/hw-transport';
+import { useInterval } from '../../hooks/use-interval';
+import BlockstackApp from '@zondax/ledger-blockstack';
+import { delay } from '../../utils/delay';
+import { ERROR_CODE } from '@zondax/ledger-blockstack/src/common';
+import { Box } from '@blockstack/ui';
 
 const STX_DERIVATION_PATH = `m/44'/5757'/0'/0/0`;
-
-export enum LedgerConnectStep {
-  Disconnected,
-  ConnectedAppClosed,
-  ConnectedAppOpen,
-  HasAddress,
+interface SignTxWithLedgerProps {
+  onConfirmPublicKey(key: Buffer, app: BlockstackApp): void;
 }
-
-export const ConnectLedger: React.FC = () => {
-  const dispatch = useDispatch();
-  const history = useHistory();
-
+export const SignTxWithLedger: FC<SignTxWithLedgerProps> = ({ onConfirmPublicKey }) => {
   const [step, setStep] = useState(LedgerConnectStep.Disconnected);
   const [loading, setLoading] = useState(false);
   const transport = useRef<Transport | null>(null);
@@ -45,6 +27,7 @@ export const ConnectLedger: React.FC = () => {
     console.log('creating listener');
     const tHid = TransportNodeHid.listen({
       next: async (event: any) => {
+        console.log(event);
         if (event.type === 'add') {
           console.log('clearing timeout id', disconnectTimeouts.current);
           clearTimeout(disconnectTimeouts.current);
@@ -120,34 +103,28 @@ export const ConnectLedger: React.FC = () => {
         console.log(`Error [${confirmedResponse.returnCode}] ${confirmedResponse.errorMessage}`);
         return;
       }
-      if (confirmedResponse.address) {
+      console.log(confirmedResponse);
+      if (confirmedResponse.publicKey) {
+        onConfirmPublicKey(confirmedResponse.publicKey as any, app);
         setLoading(true);
         setStep(LedgerConnectStep.HasAddress);
         await delay(1250);
-        dispatch(
-          setLedgerWallet({
-            address: confirmedResponse.address,
-            publicKey: (confirmedResponse.publicKey as unknown) as Buffer,
-            onSuccess: () => history.push(routes.HOME),
-          })
-        );
+        // dispatch(
+        //   setLedgerAddress({
+        //     address: confirmedResponse.address,
+        //     onSuccess: () => history.push(routes.HOME),
+        //   })
+        // );
       }
     } catch (e) {
       console.log(e);
     }
+    // await app.sign()
   }
-
   return (
-    <Onboarding>
-      <OnboardingTitle>Connect your Ledger</OnboardingTitle>
-      <OnboardingBackButton onClick={() => history.push(routes.CREATE)} />
-      <OnboardingText>Follow these steps to connect your Ledger S or X</OnboardingText>
-
+    <Box mx="extra-loose" mb="extra-loose">
+      <button onClick={handleLedger}>click</button>
       <LedgerConnectInstructions step={step} />
-
-      <OnboardingButton mt="loose" onClick={handleLedger} isDisabled={step < 2} isLoading={loading}>
-        Continue
-      </OnboardingButton>
-    </Onboarding>
+    </Box>
   );
 };
